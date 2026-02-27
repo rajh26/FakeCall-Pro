@@ -1,100 +1,27 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FakeCall Pro - Private ID</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.4.7/peerjs.min.js"></script>
-    <style>
-        body { background: #000; color: white; font-family: -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .card { background: #1c1c1e; padding: 25px; border-radius: 20px; width: 320px; text-align: center; border: 1px solid #333; }
-        h2 { color: #0a84ff; margin-bottom: 20px; }
-        input { background: #2c2c2e; border: 1px solid #444; border-radius: 10px; color: white; padding: 12px; width: 90%; margin-bottom: 10px; text-align: center; font-size: 16px; }
-        .btn-blue { background: #0a84ff; color: white; border: none; border-radius: 10px; padding: 12px; width: 100%; font-weight: bold; cursor: pointer; margin-bottom: 20px; }
-        .btn-green { background: #30d158; color: white; border: none; border-radius: 10px; padding: 15px; width: 100%; font-weight: bold; cursor: pointer; font-size: 18px; }
-        .id-display { background: #2c2c2e; padding: 10px; border-radius: 8px; margin: 10px 0; color: #30d158; font-family: monospace; border: 1px dashed #30d158; display: none; }
-        #status { font-size: 12px; color: #8e8e93; margin-top: 15px; }
-    </style>
-</head>
-<body>
-
-<div class="card">
-    <h2>نظام الاتصال الخاص</h2>
-    
-    <input type="text" id="my-custom-id" placeholder="اختر اسمك (مثلاً: rajh26)">
-    <button class="btn-blue" onclick="initMyID()">تفعيل اسمي الآن</button>
-    
-    <div class="id-display" id="display-area">معرفك النشط: <span id="active-id"></span></div>
-
-    <hr style="border: 0.5px solid #333; margin: 20px 0;">
-
-    <input type="text" id="friend-id" placeholder="اسم الصديق المراد الاتصال به">
-    <button class="btn-green" onclick="startVoiceCall()">📞 بدء مكالمة صوتية</button>
-    
-    <div id="status">الرجاء تفعيل اسمك أولاً</div>
-    
-    <audio id="remote-audio" autoplay></audio>
-</div>
-
-<script>
-    let peer = null;
-
-    // 1. تفعيل المعرف الخاص بك
     function initMyID() {
         const customId = document.getElementById('my-custom-id').value;
-        if (!customId) return alert("اكتب اسمك أولاً يا بطل!");
+        if (!customId) return alert("اكتب اسمك أولاً!");
 
-        // إنشاء الاتصال بالمعرف المختار
+        // إذا كان هناك اتصال قديم، نقوم بإغلاقه
+        if (peer) { peer.destroy(); }
+
         peer = new Peer(customId);
 
         peer.on('open', (id) => {
             document.getElementById('display-area').style.display = 'block';
             document.getElementById('active-id').innerText = id;
-            document.getElementById('status').innerText = "✅ نظامك جاهز لاستقبال المكالمات";
-            // طلب إذن الميكروفون فوراً لتجهيز الجهاز
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(() => {
-                console.log("Mic Ready");
-            });
-        });
-
-        // استقبال المكالمات
-        peer.on('call', (call) => {
-            if (confirm("لديك مكالمة من " + call.peer + " .. هل ترد؟")) {
-                navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-                    call.answer(stream);
-                    call.on('stream', (remoteStream) => {
-                        document.getElementById('remote-audio').srcObject = remoteStream;
-                        document.getElementById('status').innerText = "🔵 مكالمة جارية الآن...";
-                    });
-                });
-            }
+            document.getElementById('status').innerText = "✅ اسمك (" + id + ") جاهز الآن";
+            navigator.mediaDevices.getUserMedia({ audio: true });
         });
 
         peer.on('error', (err) => {
-            if (err.type === 'unavailable-id') alert("هذا الاسم محجوز، اختر اسماً آخر");
-            else alert("حدث خطأ في السيرفر، جرب اسماً مختلفاً");
+            console.error(err.type);
+            if (err.type === 'unavailable-id') {
+                alert("للأسف، هذا الاسم محجوز! جرب إضافة رقم عشوائي خلفه.");
+            } else {
+                alert("السيرفر مشغول قليلاً، انتظر 5 ثوانٍ وحاول مجدداً باسم مختلف.");
+            }
         });
+        
+        // لا تنسَ إضافة كود استقبال المكالمات (peer.on('call')) هنا أيضاً
     }
-
-    // 2. الاتصال بالصديق
-    function startVoiceCall() {
-        const targetId = document.getElementById('friend-id').value;
-        if (!peer) return alert("يجب تفعيل اسمك بالأعلى أولاً!");
-        if (!targetId) return alert("أدخل اسم صديقك للاتصال به");
-
-        document.getElementById('status').innerText = "🚀 جاري رنين هاتف " + targetId;
-
-        navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-            const call = peer.call(targetId, stream);
-            call.on('stream', (remoteStream) => {
-                document.getElementById('remote-audio').srcObject = remoteStream;
-                document.getElementById('status').innerText = "🔵 متصل بـ " + targetId;
-            });
-        }).catch(err => {
-            alert("تأكد من السماح للميكروفون من إعدادات Safari");
-        });
-    }
-</script>
-
-</body>
-</html>
