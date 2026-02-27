@@ -1,36 +1,60 @@
-<script>
-    // إنشاء معرف يدوي عشوائي لضمان عدم الاعتماد الكلي على السيرفر في التوليد
-    const manualId = "ID-" + Math.floor(Math.random() * 90000 + 10000);
-    const peer = new Peer(manualId); 
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FakeCall Pro - Final</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.4.7/peerjs.min.js"></script>
+    <style>
+        body { background: #000; color: white; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .card { background: #1c1c1e; padding: 30px; border-radius: 20px; width: 300px; text-align: center; border: 1px solid #333; }
+        .id-display { background: #2c2c2e; padding: 15px; border-radius: 10px; margin: 15px 0; color: #0a84ff; font-weight: bold; font-size: 20px; border: 1px solid #0a84ff; }
+        input { background: #3a3a3c; border: none; border-radius: 8px; color: white; padding: 12px; width: 90%; margin-bottom: 15px; text-align: center; }
+        button { background: #30d158; color: white; border: none; border-radius: 10px; padding: 15px; width: 100%; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2 style="color: #0a84ff;">رقم اتصالك الخاص:</h2>
+        <div class="id-display" id="my-id">جاري التوليد...</div>
+        <input type="text" id="peer-id" placeholder="ضع رقم صديقك هنا">
+        <button onclick="startCall()">📞 بدء الاتصال الصوتي</button>
+        <audio id="remote-audio" autoplay></audio>
+        <p id="status" style="font-size: 12px; color: #8e8e93; margin-top: 10px;">جاهز للعمل</p>
+    </div>
 
-    // أول ما يفتح السيرفر
+<script>
+    // إنشاء رقم عشوائي فوراً لضمان عدم التعليق
+    const randomId = "USER-" + Math.floor(Math.random() * 9999);
+    const peer = new Peer(randomId);
+
     peer.on('open', (id) => {
         document.getElementById('my-id').innerText = id;
-        document.getElementById('status').innerText = "✅ تم استخراج رقمك بنجاح";
+        document.getElementById('status').innerText = "✅ متصل بالسيرفر";
     });
 
-    // معالجة الخطأ إذا لم يظهر الرقم
-    peer.on('error', (err) => {
-        console.log(err);
-        document.getElementById('my-id').innerText = manualId; // إظهار الرقم اليدوي كخطة بديلة
-        document.getElementById('status').innerText = "⚠️ وضع الاتصال اليدوي مفعّل";
-    });
-
-    // بقية وظائف الاتصال...
-    function makeCall() {
-        const destId = document.getElementById('friend-id').value;
-        if (!destId) return alert("من فضلك أدخل رقم صديقك أولاً");
-
-        // طلب الإذن الصريح قبل الاتصال
+    peer.on('call', (call) => {
         navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-            const call = peer.call(destId, stream);
+            call.answer(stream);
+            call.on('stream', (remoteStream) => {
+                document.getElementById('remote-audio').srcObject = remoteStream;
+                document.getElementById('status').innerText = "🔵 مكالمة جارية...";
+            });
+        });
+    });
+
+    function startCall() {
+        const friendId = document.getElementById('peer-id').value;
+        if(!friendId) return alert("أدخل الرقم أولاً");
+        navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+            const call = peer.call(friendId, stream);
             document.getElementById('status').innerText = "🚀 جاري الاتصال...";
             call.on('stream', (remoteStream) => {
                 document.getElementById('remote-audio').srcObject = remoteStream;
                 document.getElementById('status').innerText = "🔵 متصل الآن!";
             });
-        }).catch(err => {
-            alert("لا يمكن الاتصال بدون ميكروفون. اذهب للإعدادات وفعله لمتصفح Safari");
         });
     }
 </script>
+</body>
+</html>
