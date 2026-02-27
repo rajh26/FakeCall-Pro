@@ -2,68 +2,63 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FakeCall Pro - Global Edition</title>
-    <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.4.29.9.min.js"></script>
+    <title>FakeCall Pro - Real Voice</title>
+    <script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
     <style>
-        :root { --ios-green: #4cd964; --ios-red: #ff3b30; }
-        body { background: #000; color: white; font-family: -apple-system, system-ui; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
-        .terminal { background: #1c1c1e; padding: 30px; border-radius: 20px; text-align: center; width: 300px; border: 1px solid #333; }
-        input { background: #2c2c2e; border: none; border-radius: 10px; color: white; padding: 12px; margin: 10px 0; width: 90%; font-size: 16px; outline: none; }
-        button { background: #007aff; color: white; border: none; border-radius: 10px; padding: 12px 25px; font-weight: bold; cursor: pointer; width: 100%; }
-        
-        /* واجهة الآيفون */
-        #iphone-frame { display: none; width: 320px; height: 600px; background: linear-gradient(to bottom, #2c3e50, #000); border-radius: 40px; position: relative; border: 8px solid #333; animation: vibrate 0.3s infinite; }
-        @keyframes vibrate { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(1deg); } 75% { transform: rotate(-1deg); } }
-        .caller-name { margin-top: 80px; font-size: 32px; text-align: center; }
-        .ios-actions { position: absolute; bottom: 60px; width: 100%; display: flex; justify-content: space-around; }
-        .btn { width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 25px; cursor: pointer; }
-        .decline { background: var(--ios-red); } .accept { background: var(--ios-green); }
+        body { background: #000; color: white; font-family: sans-serif; text-align: center; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .box { background: #1c1c1e; padding: 25px; border-radius: 20px; width: 300px; border: 1px solid #333; }
+        input { background: #2c2c2e; border: none; border-radius: 8px; color: white; padding: 12px; margin: 10px 0; width: 90%; }
+        button { background: #4cd964; color: white; border: none; border-radius: 8px; padding: 12px; width: 100%; font-weight: bold; cursor: pointer; }
+        #status { color: #8e8e93; font-size: 14px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-<div id="setup" class="terminal">
-    <h2 style="color:#007aff">التحكم العالمي</h2>
-    <input type="password" id="pass" placeholder="رمز الدخول (2026)">
-    <input type="text" id="target" placeholder="اسم الهدف (يرن عند الصديق)">
-    <button onclick="activate()">تفعيل الاتصال عن بُعد</button>
-</div>
-
-<div id="iphone-frame">
-    <div class="caller-name" id="display-name">جاري الاتصال...</div>
-    <div style="text-align:center; color:#8e8e93">مكالمة واردة</div>
-    <div class="ios-actions">
-        <div class="btn decline" onclick="location.reload()">📵</div>
-        <div class="btn accept" onclick="alert('تم التجسس بنجاح!')">📞</div>
-    </div>
+<div class="box">
+    <h2 style="color:#007aff">اتصال صوتي حقيقي</h2>
+    
+    <p id="my-id-display">معرفك: جاري التحميل...</p>
+    
+    <input type="text" id="remote-id" placeholder="أدخل معرف صديقك هنا">
+    <button onclick="startCall()">بدء مكالمة صوتية</button>
+    
+    <div id="status">جاهز للاتصال</div>
+    
+    <audio id="remoteAudio" autoplay></audio>
 </div>
 
 <script>
-    const pubnub = new PubNub({ publishKey: 'demo', subscribeKey: 'demo', uuid: 'user_' + Math.random() });
-    pubnub.subscribe({ channels: ['fake_call_global'] });
+    const peer = new Peer(); // إنشاء معرف فريد للجهاز
+    let myStream;
 
-    pubnub.addListener({
-        message: function(m) {
-            if(m.message.type === 'CALL') {
-                document.getElementById('setup').style.display = 'none';
-                document.getElementById('display-name').innerText = m.message.name;
-                document.getElementById('iphone-frame').style.display = 'block';
-                new Audio('https://www.soundjay.com/phone/phone-calling-1.mp3').play();
-            }
-        }
+    // 1. الحصول على معرف الجهاز
+    peer.on('open', (id) => {
+        document.getElementById('my-id-display').innerText = "معرفك: " + id;
     });
 
-    function activate() {
-        const p = document.getElementById('pass').value;
-        const n = document.getElementById('target').value;
-        if(p === '2026') {
-            pubnub.publish({
-                channel: 'fake_call_global',
-                message: { type: 'CALL', name: n }
+    // 2. استقبال مكالمة
+    peer.on('call', (call) => {
+        navigator.mediaDevices.getUserMedia({video: false, audio: true}).then((stream) => {
+            call.answer(stream); // الرد بالصوت الخاص بك
+            call.on('stream', (remoteStream) => {
+                document.getElementById('remoteAudio').srcObject = remoteStream;
+                document.getElementById('status').innerText = "متصل الآن - يمكنك التحدث!";
             });
-            alert('تم إرسال المكالمة لكل الأجهزة المتصلة!');
-        } else { alert('الرمز خطأ!'); }
+        });
+    });
+
+    // 3. بدء مكالمة مع الصديق
+    function startCall() {
+        const friendId = document.getElementById('remote-id').value;
+        document.getElementById('status').innerText = "جاري الاتصال...";
+        
+        navigator.mediaDevices.getUserMedia({video: false, audio: true}).then((stream) => {
+            const call = peer.call(friendId, stream);
+            call.on('stream', (remoteStream) => {
+                document.getElementById('remoteAudio').srcObject = remoteStream;
+                document.getElementById('status').innerText = "متصل الآن - يمكنك التحدث!";
+            });
+        });
     }
 </script>
 </body>
