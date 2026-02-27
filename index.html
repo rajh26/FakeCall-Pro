@@ -1,19 +1,70 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>FakeCall Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FakeCall Pro - Global Edition</title>
+    <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.4.29.9.min.js"></script>
     <style>
-        body { background: #000; color: #0f0; text-align: center; font-family: sans-serif; padding-top: 50px; }
-        .box { border: 2px solid #0f0; display: inline-block; padding: 20px; border-radius: 10px; }
-        button { background: #0f0; color: #000; border: none; padding: 10px 20px; font-weight: bold; cursor: pointer; }
+        :root { --ios-green: #4cd964; --ios-red: #ff3b30; }
+        body { background: #000; color: white; font-family: -apple-system, system-ui; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
+        .terminal { background: #1c1c1e; padding: 30px; border-radius: 20px; text-align: center; width: 300px; border: 1px solid #333; }
+        input { background: #2c2c2e; border: none; border-radius: 10px; color: white; padding: 12px; margin: 10px 0; width: 90%; font-size: 16px; outline: none; }
+        button { background: #007aff; color: white; border: none; border-radius: 10px; padding: 12px 25px; font-weight: bold; cursor: pointer; width: 100%; }
+        
+        /* واجهة الآيفون */
+        #iphone-frame { display: none; width: 320px; height: 600px; background: linear-gradient(to bottom, #2c3e50, #000); border-radius: 40px; position: relative; border: 8px solid #333; animation: vibrate 0.3s infinite; }
+        @keyframes vibrate { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(1deg); } 75% { transform: rotate(-1deg); } }
+        .caller-name { margin-top: 80px; font-size: 32px; text-align: center; }
+        .ios-actions { position: absolute; bottom: 60px; width: 100%; display: flex; justify-content: space-around; }
+        .btn { width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 25px; cursor: pointer; }
+        .decline { background: var(--ios-red); } .accept { background: var(--ios-green); }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h1>System Online v1.0</h1>
-        <p>إذا رأيت هذا النص، فمشكلة الشاشة البيضاء انتهت!</p>
-        <button onclick="alert('النظام يعمل بنجاح!')">اختبار النظام</button>
+
+<div id="setup" class="terminal">
+    <h2 style="color:#007aff">التحكم العالمي</h2>
+    <input type="password" id="pass" placeholder="رمز الدخول (2026)">
+    <input type="text" id="target" placeholder="اسم الهدف (يرن عند الصديق)">
+    <button onclick="activate()">تفعيل الاتصال عن بُعد</button>
+</div>
+
+<div id="iphone-frame">
+    <div class="caller-name" id="display-name">جاري الاتصال...</div>
+    <div style="text-align:center; color:#8e8e93">مكالمة واردة</div>
+    <div class="ios-actions">
+        <div class="btn decline" onclick="location.reload()">📵</div>
+        <div class="btn accept" onclick="alert('تم التجسس بنجاح!')">📞</div>
     </div>
+</div>
+
+<script>
+    const pubnub = new PubNub({ publishKey: 'demo', subscribeKey: 'demo', uuid: 'user_' + Math.random() });
+    pubnub.subscribe({ channels: ['fake_call_global'] });
+
+    pubnub.addListener({
+        message: function(m) {
+            if(m.message.type === 'CALL') {
+                document.getElementById('setup').style.display = 'none';
+                document.getElementById('display-name').innerText = m.message.name;
+                document.getElementById('iphone-frame').style.display = 'block';
+                new Audio('https://www.soundjay.com/phone/phone-calling-1.mp3').play();
+            }
+        }
+    });
+
+    function activate() {
+        const p = document.getElementById('pass').value;
+        const n = document.getElementById('target').value;
+        if(p === '2026') {
+            pubnub.publish({
+                channel: 'fake_call_global',
+                message: { type: 'CALL', name: n }
+            });
+            alert('تم إرسال المكالمة لكل الأجهزة المتصلة!');
+        } else { alert('الرمز خطأ!'); }
+    }
+</script>
 </body>
 </html>
