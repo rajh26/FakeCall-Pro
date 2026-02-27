@@ -1,39 +1,85 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FakeCall Pro - Stable Voice</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.4.7/peerjs.min.js"></script>
+    <style>
+        body { background: #000; color: white; font-family: -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .card { background: #1c1c1e; padding: 30px; border-radius: 25px; width: 320px; text-align: center; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .id-box { background: #2c2c2e; padding: 15px; border-radius: 12px; margin: 15px 0; font-family: monospace; font-size: 18px; color: #0a84ff; border: 1px dashed #0a84ff; }
+        input { background: #3a3a3c; border: none; border-radius: 10px; color: white; padding: 12px; width: 90%; margin-bottom: 15px; text-align: center; }
+        button { background: #30d158; color: white; border: none; border-radius: 10px; padding: 15px; width: 100%; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:active { transform: scale(0.98); opacity: 0.8; }
+        #status { font-size: 12px; color: #8e8e93; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2 style="color: #0a84ff; margin-bottom: 5px;">اتصال حقيقي</h2>
+    <div id="status">جاري الاتصال بالسيرفر العالمي...</div>
+    
+    <div class="id-box" id="my-id">جاري استخراج رقمك...</div>
+    
+    <input type="text" id="friend-id" placeholder="أدخل رقم صديقك هنا">
+    <button onclick="makeCall()">📞 بدء المحادثة الصوتية</button>
+    
+    <audio id="remote-audio" autoplay></audio>
+</div>
+
 <script>
-    // استخدام سيرفر بديل ومستقر
-    const peer = new Peer(Math.random().toString(36).substr(2, 9), {
-        host: '0.peerjs.com',
-        port: 443,
-        secure: true
-    }); 
+    // إنشاء اتصال مع سيرفرات PeerJS العالمية
+    const peer = new Peer();
 
+    // أول ما يفتح السيرفر يعطيك الرقم فوراً
     peer.on('open', (id) => {
-        console.log('ID Generated: ' + id);
-        document.getElementById('my-id-display').innerText = "معرفك: " + id;
-        document.getElementById('status').innerText = "جاهز للاتصال";
+        document.getElementById('my-id').innerText = id;
+        document.getElementById('status').innerText = "✅ النظام جاهز - تبادل الأرقام مع صديقك";
     });
 
-    peer.on('error', (err) => {
-        // في حال حدوث خطأ، سنظهر المعرف يدوياً
-        document.getElementById('my-id-display').innerText = "أعد تحديث الصفحة من فضلك";
+    // استقبال المكالمة
+    peer.on('call', (call) => {
+        const confirmCall = confirm("لديك مكالمة صوتية واردة، هل تريد الرد؟");
+        if (confirmCall) {
+            navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+                call.answer(stream);
+                call.on('stream', (remoteStream) => {
+                    document.getElementById('remote-audio').srcObject = remoteStream;
+                    document.getElementById('status').innerText = "🔵 أنت الآن في مكالمة مباشرة!";
+                });
+            });
+        }
     });
 
-    // كود بدء المكالمة المحسن
-    function startCall() {
-        const friendId = document.getElementById('remote-id').value;
-        if(!friendId) return alert("أدخل معرف صديقك أولاً");
+    // بدء المكالمة
+    function makeCall() {
+        const destId = document.getElementById('friend-id').value;
+        if (!destId) return alert("من فضلك أدخل رقم صديقك أولاً");
+
+        document.getElementById('status').innerText = "🚀 جاري طلب الاتصال...";
         
-        document.getElementById('status').innerText = "جاري طلب الإذن...";
-        
-        navigator.mediaDevices.getUserMedia({audio: true}).then((stream) => {
-            document.getElementById('status').innerText = "جاري الرنين...";
-            const call = peer.call(friendId, stream);
+        navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+            const call = peer.call(destId, stream);
             call.on('stream', (remoteStream) => {
-                const audio = document.getElementById('remoteAudio');
-                audio.srcObject = remoteStream;
-                document.getElementById('status').innerText = "متصل الآن!";
+                document.getElementById('remote-audio').srcObject = remoteStream;
+                document.getElementById('status').innerText = "🔵 متصل الآن!";
             });
         }).catch(err => {
-            alert("يجب السماح للميكروفون من إعدادات المتصفح");
+            alert("فشل الوصول للميكروفون! تأكد من إعطاء الصلاحية.");
         });
     }
+
+    // حل مشكلة التعليق: إذا لم يظهر الرقم خلال 10 ثوانٍ
+    setTimeout(() => {
+        if(document.getElementById('my-id').innerText.includes("جاري")) {
+            document.getElementById('my-id').innerText = "اضغط لتحديث السيرفر";
+            document.getElementById('my-id').style.cursor = "pointer";
+            document.getElementById('my-id').onclick = () => location.reload();
+        }
+    }, 10000);
 </script>
+
+</body>
+</html>
