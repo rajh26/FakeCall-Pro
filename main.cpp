@@ -1,33 +1,46 @@
-<script src="https://cdn.pubnub.com/sdk/javascript/pubnub.4.29.9.min.js"></script>
+#include <iostream>
+#include <string>
+#include <unistd.h> // لعمل مؤقت حقيقي على الأنظمة العالمية
 
-<script>
-    // إعداد الاتصال بين جهازين
-    const pubnub = new PubNub({
-        publishKey: 'demo', // مفتاح تجريبي للربط
-        subscribeKey: 'demo',
-        uuid: "agent_" + Math.random()
-    });
+using namespace std;
 
-    pubnub.subscribe({ channels: ['fake_call_channel'] });
+/**
+ * FakeCall Pro - Core Logic (C++ Version)
+ * هذا هو المحرك الأساسي للأداة قبل تحويلها إلى واجهة ويب.
+ */
 
-    // استقبال الإشارة من الجهاز الآخر
-    pubnub.addListener({
-        message: function(m) {
-            if(m.message.type === 'TRIGGER_CALL') {
-                document.getElementById('display-name').innerText = m.message.targetName;
-                document.getElementById('iphone-frame').style.display = 'block';
-                new Audio('https://www.soundjay.com/phone/phone-calling-1.mp3').play();
-            }
-        }
-    });
+int main() {
+    string user, pass, target;
+    int waitTime;
 
-    // إرسال الإشارة لجهاز الصديق
-    function initiateCall() {
-        const name = document.getElementById('target').value;
-        pubnub.publish({
-            channel: 'fake_call_channel',
-            message: { type: 'TRIGGER_CALL', targetName: name }
-        });
-        alert("تم إرسال إشارة الاتصال للجهاز الآخر!");
+    cout << "=== FakeCall Pro CORE v6.0 ===" << endl;
+    cout << "ID: "; cin >> user;
+    cout << "PIN: "; cin >> pass;
+
+    if (user == "admin" && pass == "2026") {
+        cout << "\n[Access Granted] Welcome Agent " << user << endl;
+        cout << "Target Name: "; cin >> target;
+        cout << "Set Timer (seconds): "; cin >> waitTime;
+
+        cout << "\nSystem: Waiting " << waitTime << "s before trigger..." << endl;
+        sleep(waitTime); 
+
+        cout << "\n\n      .----------." << endl;
+        cout << "      |  iPhone  |" << endl;
+        cout << "      |----------|" << endl;
+        cout << "      | INCOMING |" << endl;
+        cout << "      |   CALL   |" << endl;
+        cout << "      |  " << target << "  |" << endl;
+        cout << "      |  (O)  (X)|" << endl;
+        cout << "      '----------'" << endl;
+        
+        cout << "\n[1] Answer | [0] Reject: ";
+        int action; cin >> action;
+        if(action == 1) cout << "Status: ON CALL..." << endl;
+        else cout << "Status: CALL ENDED." << endl;
+
+    } else {
+        cout << "[!] Invalid Access." << endl;
     }
-</script>
+    return 0;
+}
